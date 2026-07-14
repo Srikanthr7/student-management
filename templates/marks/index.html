@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Marks Entry{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Marks & Performance</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Marks & Performance</h1>
+        <p class="page-subtitle">Subject-wise marks entry and GPA tracking</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('marks.rank_list') }}" class="btn btn-outline-custom">
+            <i class="fas fa-trophy me-2"></i>Rank List
+        </a>
+        <a href="{{ url_for('marks.analytics') }}" class="btn btn-outline-custom">
+            <i class="fas fa-chart-bar me-2"></i>Analytics
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="quick-action-card" onclick="location.href='{{ url_for('marks.entry') }}'">
+            <div class="qa-icon blue"><i class="fas fa-edit"></i></div>
+            <div class="qa-body">
+                <h4>Enter Marks</h4>
+                <p>Add subject-wise marks for students</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="quick-action-card" onclick="location.href='{{ url_for('marks.rank_list') }}'">
+            <div class="qa-icon gold"><i class="fas fa-trophy"></i></div>
+            <div class="qa-body">
+                <h4>Rank List</h4>
+                <p>View department rank list by performance</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="quick-action-card" onclick="location.href='{{ url_for('marks.analytics') }}'">
+            <div class="qa-icon purple"><i class="fas fa-chart-bar"></i></div>
+            <div class="qa-body">
+                <h4>Analytics</h4>
+                <p>Grade distribution and pass/fail analysis</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Add User{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('auth.users_list') }}">User Management</a></li>
+<li class="breadcrumb-item active">Add User</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Create User Account</h1>
+        <p class="page-subtitle">Register a new system user (admin, teacher, or student) with credentials.</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm p-4">
+            <div class="card-body">
+                <h3 class="card-title h5 mb-4"><i class="fas fa-user-plus me-2 text-primary"></i>Account Details</h3>
+                <form action="{{ url_for('auth.add_user') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user text-muted"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" placeholder="e.g. jdoe" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-envelope text-muted"></i></span>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="e.g. john.doe@edutrack.com" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Min. 8 characters" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="role" class="form-label">System Role</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-shield-alt text-muted"></i></span>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="student" selected>Student</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('auth.users_list') }}" class="btn btn-outline-custom">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Users
+                        </a>
+                        <button type="submit" class="btn btn-primary-custom px-4">
+                            <i class="fas fa-check me-2"></i>Create User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

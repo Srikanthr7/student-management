@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Mark Attendance{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Attendance</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Mark Attendance</h1>
+        <p class="page-subtitle">Record attendance for a class/subject</p>
+    </div>
+    <a href="{{ url_for('attendance.report') }}" class="btn btn-outline-custom">
+        <i class="fas fa-chart-bar me-2"></i>View Report
+    </a>
+</div>
+
+<!-- Filter Bar -->
+<div class="form-card mb-4">
+    <div class="form-card-body">
+        <form method="GET" action="{{ url_for('attendance.mark_attendance') }}" id="filterForm">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label class="form-label">Department</label>
+                    <select class="form-select" name="dept_id" id="deptSelect">
+                        <option value="">Select Department</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_dept == dept.id %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label">Subject</label>
+                    <select class="form-select" name="subject_id" id="subjectSelect">
+                        <option value="">Select Subject</option>
+                        {% for subj in subjects %}
+                        <option value="{{ subj.id }}" {% if selected_subject == subj.id %}selected{% endif %}>
+                            {{ subj.name }} ({{ subj.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-control" name="date"
+                           value="{{ selected_date.isoformat() }}" max="{{ today.isoformat() }}">
+                </div>
+                <div class="col-12 col-md-3">
+                    <button type="submit" class="btn btn-primary-custom w-100">
+                        <i class="fas fa-users me-2"></i>Load Students
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if students %}
+<form method="POST" action="{{ url_for('attendance.mark_attendance') }}" id="attendanceForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="dept_id" value="{{ selected_dept }}">
+    <input type="hidden" name="subject_id" value="{{ selected_subject }}">
+    <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
+
+    <div class="form-card">
+        <div class="form-card-header">
+            <div>
+                <h3 class="form-card-title">
+                    <i class="fas fa-users me-2"></i>{{ students|length }} Students
+                </h3>
+                <p class="form-card-subtitle text-muted mb-0">{{ selected_date.strftime('%A, %d %B %Y') }}</p>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <button type="button" class="btn btn-sm btn-success" onclick="markAll('present')">
+                    <i class="fas fa-check-double me-1"></i>All Present
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="markAll('absent')">
+                    <i class="fas fa-times me-1"></i>All Absent
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary counters -->
+        <div class="attendance-summary-bar">
+            <span class="summary-item present"><i class="fas fa-check-circle"></i> <span id="presentCount">0</span> Present</span>
+            <span class="summary-item absent"><i class="fas fa-times-circle"></i> <span id="absentCount">0</span> Absent</span>
+            <span class="summary-item late"><i class="fas fa-clock"></i> <span id="lateCount">0</span> Late</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-custom table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Roll No</th>
+                        <th>Student Name</th>
+                        <th class="text-center">
+                            <span class="text-success"><i class="fas fa-check-circle me-1"></i>Present</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="text-danger"><i class="fas fa-times-circle me-1"></i>Absent</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="text-warning"><i class="fas fa-clock me-1"></i>Late</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    {% set current_status = existing_attendance.get(student.id, 'present') %}
+                    <input type="hidden" name="student_ids[]" value="{{ student.id }}">
+                    <tr class="attendance-row" data-student-id="{{ student.id }}">
+                        <td class="text-muted">{{ loop.index }}</td>
+                        <td><code>{{ student.roll_number }}</code></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="student-mini-avatar">{{ student.full_name[0] }}</div>
+                                <strong>{{ student.full_name }}</strong>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <input type="radio" class="btn-check att-radio" name="status_{{ student.id }}"
+                                   id="present_{{ student.id }}" value="present"
+                                   {% if current_status == 'present' %}checked{% endif %}
+                                   onchange="updateCounts()">
+                            <label class="btn btn-sm att-btn-present" for="present_{{ student.id }}">
+                                <i class="fas fa-check"></i>
+                            </label>
+                        </td>
+                        <td class="text-center">
+                            <input type="radio" class="btn-check att-radio" name="status_{{ student.id }}"
+                                   id="absent_{{ student.id }}" value="absent"
+                                   {% if current_status == 'absent' %}checked{% endif %}
+                                   onchange="updateCounts()">
+                            <label class="btn btn-sm att-btn-absent" for="absent_{{ student.id }}">
+                                <i class="fas fa-times"></i>
+                            </label>
+                        </td>
+                        <td class="text-center">
+                            <input type="radio" class="btn-check att-radio" name="status_{{ student.id }}"
+                                   id="late_{{ student.id }}" value="late"
+                                   {% if current_status == 'late' %}checked{% endif %}
+                                   onchange="updateCounts()">
+                            <label class="btn btn-sm att-btn-late" for="late_{{ student.id }}">
+                                <i class="fas fa-clock"></i>
+                            </label>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="form-card-footer">
+            <button type="submit" class="btn btn-primary-custom btn-lg">
+                <i class="fas fa-save me-2"></i>Save Attendance
+            </button>
+        </div>
+    </div>
+</form>
+
+{% elif selected_dept and selected_subject %}
+<div class="empty-state">
+    <i class="fas fa-users-slash"></i>
+    <h3>No Students Found</h3>
+    <p>No active students in this department for the selected criteria.</p>
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-calendar-check"></i>
+    <h3>Select Class Details</h3>
+    <p>Choose a department and subject above to load the student list.</p>
+</div>
+{% endif %}
+
+<script>
+function markAll(status) {
+    document.querySelectorAll(`input[value="${status}"].att-radio`).forEach(r => r.checked = true);
+    updateCounts();
+}
+
+function updateCounts() {
+    let p = 0, a = 0, l = 0;
+    document.querySelectorAll('.attendance-row').forEach(row => {
+        const sid = row.dataset.studentId;
+        const checked = document.querySelector(`input[name="status_${sid}"]:checked`);
+        if (checked) {
+            if (checked.value === 'present') p++;
+            else if (checked.value === 'absent') a++;
+            else if (checked.value === 'late') l++;
+        }
+    });
+    document.getElementById('presentCount').textContent = p;
+    document.getElementById('absentCount').textContent = a;
+    document.getElementById('lateCount').textContent = l;
+}
+
+// Initialize counts on load
+document.addEventListener('DOMContentLoaded', updateCounts);
+</script>
+{% endblock %}

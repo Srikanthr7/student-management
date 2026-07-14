@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Rank List{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('marks.index') }}">Marks</a></li>
+<li class="breadcrumb-item active">Rank List</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-trophy me-2 text-warning"></i>Rank List</h1>
+        <p class="page-subtitle">Department-wise student performance ranking</p>
+    </div>
+    {% if rank_data %}
+    <a href="{{ url_for('reports.export_marks_excel', dept_id=selected_dept, semester=semester, academic_year=academic_year) }}"
+       class="btn btn-success-custom">
+        <i class="fas fa-file-excel me-2"></i>Export Excel
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="form-card mb-4">
+    <div class="form-card-body">
+        <form method="GET">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Department</label>
+                    <select class="form-select" name="dept_id">
+                        <option value="">Select Department</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_dept == dept.id %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Semester</label>
+                    <select class="form-select" name="semester">
+                        <option value="">All Semesters</option>
+                        {% for s in range(1, 9) %}
+                        <option value="{{ s }}" {% if semester == s %}selected{% endif %}>Semester {{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Academic Year</label>
+                    <select class="form-select" name="academic_year">
+                        {% for ay in ['2024-25', '2023-24', '2025-26'] %}
+                        <option value="{{ ay }}" {% if academic_year == ay %}selected{% endif %}>{{ ay }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary-custom w-100">
+                        <i class="fas fa-search me-2"></i>Generate
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if rank_data %}
+<!-- Top 3 Podium -->
+{% if rank_data|length >= 3 %}
+<div class="podium-container mb-4">
+    <!-- 2nd Place -->
+    <div class="podium-item second">
+        <div class="podium-avatar silver">
+            {{ rank_data[1].student.full_name[0] }}{{ rank_data[1].student.full_name.split()[-1][0] }}
+        </div>
+        <div class="podium-name">{{ rank_data[1].student.full_name }}</div>
+        <div class="podium-score">{{ rank_data[1].percentage }}%</div>
+        <div class="podium-stand silver-stand">2</div>
+    </div>
+    <!-- 1st Place -->
+    <div class="podium-item first">
+        <div class="podium-crown"><i class="fas fa-crown"></i></div>
+        <div class="podium-avatar gold">
+            {{ rank_data[0].student.full_name[0] }}{{ rank_data[0].student.full_name.split()[-1][0] }}
+        </div>
+        <div class="podium-name">{{ rank_data[0].student.full_name }}</div>
+        <div class="podium-score">{{ rank_data[0].percentage }}%</div>
+        <div class="podium-stand gold-stand">1</div>
+    </div>
+    <!-- 3rd Place -->
+    <div class="podium-item third">
+        <div class="podium-avatar bronze">
+            {{ rank_data[2].student.full_name[0] }}{{ rank_data[2].student.full_name.split()[-1][0] }}
+        </div>
+        <div class="podium-name">{{ rank_data[2].student.full_name }}</div>
+        <div class="podium-score">{{ rank_data[2].percentage }}%</div>
+        <div class="podium-stand bronze-stand">3</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Full Rank Table -->
+<div class="form-card">
+    <div class="form-card-header">
+        <h3 class="form-card-title">Complete Rank List — {{ rank_data|length }} Students</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center">Rank</th>
+                    <th>Student</th>
+                    <th>Roll No</th>
+                    <th class="text-center">Subjects</th>
+                    <th class="text-center">Obtained</th>
+                    <th class="text-center">Percentage</th>
+                    <th class="text-center">CGPA</th>
+                    <th class="text-center">Pass</th>
+                    <th class="text-center">Fail</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in rank_data %}
+                <tr class="{% if item.rank <= 3 %}top-rank{% endif %}">
+                    <td class="text-center">
+                        {% if item.rank == 1 %}
+                        <span class="rank-badge gold"><i class="fas fa-crown me-1"></i>1st</span>
+                        {% elif item.rank == 2 %}
+                        <span class="rank-badge silver">2nd</span>
+                        {% elif item.rank == 3 %}
+                        <span class="rank-badge bronze">3rd</span>
+                        {% else %}
+                        <span class="rank-badge">{{ item.rank }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="student-mini-avatar">
+                                {{ item.student.full_name[0] }}
+                            </div>
+                            <a href="{{ url_for('students.student_detail', student_id=item.student.id) }}"
+                               class="student-name-link">
+                                {{ item.student.full_name }}
+                            </a>
+                        </div>
+                    </td>
+                    <td><code>{{ item.student.roll_number }}</code></td>
+                    <td class="text-center">{{ item.marks_count }}</td>
+                    <td class="text-center">{{ item.total_obtained | round(1) }}/{{ item.total_max | round(0) }}</td>
+                    <td class="text-center">
+                        <div class="pct-with-bar">
+                            <span class="fw-semibold {% if item.percentage >= 75 %}text-success{% elif item.percentage >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ item.percentage }}%
+                            </span>
+                            <div class="mini-bar-inline">
+                                <div class="mini-bar-fill-inline {% if item.percentage >= 75 %}success{% elif item.percentage >= 50 %}warning{% else %}danger{% endif %}"
+                                     style="width:{{ item.percentage }}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-center"><span class="fw-bold text-primary">{{ item.cgpa }}</span></td>
+                    <td class="text-center"><span class="badge bg-success">{{ item.pass_count }}</span></td>
+                    <td class="text-center">
+                        <span class="badge {% if item.fail_count > 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                            {{ item.fail_count }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <a href="{{ url_for('marks.student_marks', student_id=item.student.id) }}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-chart-line"></i>
+                        </a>
+                        <a href="{{ url_for('reports.student_marksheet_pdf', student_id=item.student.id, academic_year=academic_year) }}"
+                           class="btn btn-sm btn-outline-danger" target="_blank">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-trophy"></i>
+    <h3>Select Department to View Rankings</h3>
+    <p>Choose a department and academic year above to generate the rank list.</p>
+</div>
+{% endif %}
+{% endblock %}

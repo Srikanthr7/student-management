@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}API Documentation{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">API Docs</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">REST API v1 Documentation</h1>
+        <p class="page-subtitle">Interactive Swagger-style documentation for the EduTrack Pro backend services.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Sidebar Navigation -->
+    <div class="col-12 col-lg-3">
+        <div class="card border-0 shadow-sm sticky-top" style="top: 90px; z-index: 10;">
+            <div class="card-body">
+                <h5 class="card-title mb-3">API Sections</h5>
+                <div class="list-group list-group-flush">
+                    <a href="#overview" class="list-group-item list-group-item-action border-0 px-0 active"><i class="fas fa-info-circle me-2"></i>Overview</a>
+                    <a href="#authentication" class="list-group-item list-group-item-action border-0 px-0"><i class="fas fa-lock me-2"></i>Authentication</a>
+                    <a href="#students" class="list-group-item list-group-item-action border-0 px-0"><i class="fas fa-user-graduate me-2"></i>Students API</a>
+                    <a href="#departments" class="list-group-item list-group-item-action border-0 px-0"><i class="fas fa-building me-2"></i>Departments API</a>
+                    <a href="#attendance" class="list-group-item list-group-item-action border-0 px-0"><i class="fas fa-calendar-check me-2"></i>Attendance API</a>
+                    <a href="#marks" class="list-group-item list-group-item-action border-0 px-0"><i class="fas fa-chart-bar me-2"></i>Marks API</a>
+                    <a href="#stats" class="list-group-item list-group-item-action border-0 px-0"><i class="fas fa-chart-pie me-2"></i>Statistics API</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Docs Content -->
+    <div class="col-12 col-lg-9">
+        <!-- Overview Section -->
+        <div id="overview" class="card border-0 shadow-sm p-4 mb-4">
+            <div class="card-body">
+                <h2 class="card-title h4 mb-3">Overview</h2>
+                <p>EduTrack Pro provides a full-featured REST API returning JSON responses. All requests must utilize secure JSON payloads and receive standard HTTP status codes in response. The base path for all endpoints is:</p>
+                <div class="bg-dark text-white p-3 rounded font-monospace mb-3">
+                    http://localhost:5000/api/v1
+                </div>
+                <p>All endpoints (except auth and docs) are protected by JSON Web Tokens (JWT) using the Bearer schema:</p>
+                <div class="bg-dark text-white p-3 rounded font-monospace">
+                    Authorization: Bearer &lt;your_jwt_access_token&gt;
+                </div>
+            </div>
+        </div>
+
+        <!-- Authentication Section -->
+        <div id="authentication" class="card border-0 shadow-sm p-4 mb-4">
+            <div class="card-body">
+                <h2 class="card-title h4 mb-4"><i class="fas fa-lock text-primary me-2"></i>Authentication</h2>
+
+                <!-- Token Endpoint -->
+                <div class="border rounded p-3 mb-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-success me-2 px-3 py-2">POST</span>
+                        <code class="fs-6 fw-bold">/auth/token</code>
+                    </div>
+                    <p class="text-muted">Obtain JWT access and refresh tokens by passing valid credentials.</p>
+                    <h6>Request Body (JSON)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "username": "admin",
+  "password": "Admin@123"
+}</code></pre>
+                    <h6>Response (200 OK)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "status": "success",
+  "message": "Token issued successfully",
+  "data": {
+    "access_token": "eyJhbGciOi...",
+    "refresh_token": "eyJhbGciOi...",
+    "user": {
+      "id": 1,
+      "username": "admin",
+      "role": "admin"
+    }
+  }
+}</code></pre>
+                </div>
+
+                <!-- Refresh Endpoint -->
+                <div class="border rounded p-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-success me-2 px-3 py-2">POST</span>
+                        <code class="fs-6 fw-bold">/auth/refresh</code>
+                    </div>
+                    <p class="text-muted">Generate a new access token using your refresh token. Include the refresh token in the Authorization header.</p>
+                    <h6>Response (200 OK)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "status": "success",
+  "message": "Token refreshed",
+  "data": {
+    "access_token": "eyJhbGciOi..."
+  }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Section -->
+        <div id="students" class="card border-0 shadow-sm p-4 mb-4">
+            <div class="card-body">
+                <h2 class="card-title h4 mb-4"><i class="fas fa-user-graduate text-purple me-2"></i>Students API</h2>
+
+                <!-- List Students -->
+                <div class="border rounded p-3 mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-primary me-2 px-3 py-2">GET</span>
+                        <code class="fs-6 fw-bold">/students</code>
+                    </div>
+                    <p class="text-muted">Retrieve a paginated list of students. Supports filtering by search keyword and department.</p>
+                    <h6>Query Parameters</h6>
+                    <ul>
+                        <li><code>page</code>: Integer (default: 1)</li>
+                        <li><code>per_page</code>: Integer (default: 20)</li>
+                        <li><code>search</code>: String (filters by name, email, roll number)</li>
+                        <li><code>dept_id</code>: Integer (filters by department)</li>
+                    </ul>
+                    <h6>Response (200 OK)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "status": "success",
+  "data": {
+    "students": [
+      {
+        "id": 1,
+        "student_id": "ETP20260001",
+        "full_name": "Arjun Sharma",
+        "roll_number": "CSE2026001",
+        "department": "Computer Science & Engineering",
+        "year": 1,
+        "semester": 1,
+        "email": "arjun.sharma@student.edu",
+        "cgpa": 3.7
+      }
+    ],
+    "total": 40,
+    "pages": 2,
+    "current_page": 1
+  }
+}</code></pre>
+                </div>
+
+                <!-- Create Student -->
+                <div class="border rounded p-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-success me-2 px-3 py-2">POST</span>
+                        <code class="fs-6 fw-bold">/students</code>
+                    </div>
+                    <p class="text-muted">Create a new student record. Requires admin or teacher credentials.</p>
+                    <h6>Request Body (JSON)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "full_name": "Nisha Patel",
+  "roll_number": "ECE2026099",
+  "department_id": 2,
+  "email": "nisha.patel@student.edu",
+  "year": 1,
+  "semester": 1
+}</code></pre>
+                    <h6>Response (201 Created)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "status": "success",
+  "message": "Student created",
+  "data": {
+    "id": 41,
+    "student_id": "ETP20260041",
+    "full_name": "Nisha Patel",
+    "roll_number": "ECE2026099",
+    "department": "Electronics & Communication",
+    "year": 1,
+    "semester": 1,
+    "email": "nisha.patel@student.edu"
+  }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Departments Section -->
+        <div id="departments" class="card border-0 shadow-sm p-4 mb-4">
+            <div class="card-body">
+                <h2 class="card-title h4 mb-4"><i class="fas fa-building text-success me-2"></i>Departments API</h2>
+                <div class="border rounded p-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-primary me-2 px-3 py-2">GET</span>
+                        <code class="fs-6 fw-bold">/departments</code>
+                    </div>
+                    <p class="text-muted">Fetch list of departments with code, HOD name, and current student count.</p>
+                    <h6>Response (200 OK)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "Computer Science & Engineering",
+      "code": "CSE",
+      "head_of_dept": "Dr. Rajesh Kumar",
+      "student_count": 8
+    }
+  ]
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Section -->
+        <div id="attendance" class="card border-0 shadow-sm p-4 mb-4">
+            <div class="card-body">
+                <h2 class="card-title h4 mb-4"><i class="fas fa-calendar-check text-info me-2"></i>Attendance API</h2>
+                <div class="border rounded p-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-primary me-2 px-3 py-2">GET</span>
+                        <code class="fs-6 fw-bold">/attendance</code>
+                    </div>
+                    <p class="text-muted">Query attendance records by student ID or subject ID.</p>
+                    <h6>Query Parameters</h6>
+                    <ul>
+                        <li><code>student_id</code>: Integer</li>
+                        <li><code>subject_id</code>: Integer</li>
+                    </ul>
+                    <h6>Response (200 OK)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "status": "success",
+  "data": [
+    {
+      "id": 12,
+      "student_id": 1,
+      "subject_id": 3,
+      "date": "2026-06-18",
+      "status": "present"
+    }
+  ]
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Marks Section -->
+        <div id="marks" class="card border-0 shadow-sm p-4 mb-4">
+            <div class="card-body">
+                <h2 class="card-title h4 mb-4"><i class="fas fa-chart-bar text-warning me-2"></i>Marks API</h2>
+                <div class="border rounded p-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-primary me-2 px-3 py-2">GET</span>
+                        <code class="fs-6 fw-bold">/marks</code>
+                    </div>
+                    <p class="text-muted">Fetch student exam marks, including grade calculations and pass/fail standing.</p>
+                    <h6>Query Parameters</h6>
+                    <ul>
+                        <li><code>student_id</code>: Integer</li>
+                    </ul>
+                    <h6>Response (200 OK)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "status": "success",
+  "data": [
+    {
+      "id": 4,
+      "student_id": 1,
+      "subject": "Data Structures",
+      "exam_type": "midterm",
+      "marks_obtained": 82.5,
+      "max_marks": 100.0,
+      "percentage": 82.5,
+      "grade": "A+",
+      "is_pass": true,
+      "semester": 1,
+      "academic_year": "2024-25"
+    }
+  ]
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <div id="stats" class="card border-0 shadow-sm p-4">
+            <div class="card-body">
+                <h2 class="card-title h4 mb-4"><i class="fas fa-chart-pie text-secondary me-2"></i>Statistics API</h2>
+                <div class="border rounded p-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-primary me-2 px-3 py-2">GET</span>
+                        <code class="fs-6 fw-bold">/stats</code>
+                    </div>
+                    <p class="text-muted">Retrieve overall database aggregates for students, departments, registrations, and subjects.</p>
+                    <h6>Response (200 OK)</h6>
+                    <pre class="bg-light p-3 rounded"><code>{
+  "status": "success",
+  "data": {
+    "total_students": 40,
+    "total_departments": 5,
+    "new_this_month": 0,
+    "total_subjects": 12
+  }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

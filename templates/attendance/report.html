@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Attendance Report{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('attendance.mark_attendance') }}">Attendance</a></li>
+<li class="breadcrumb-item active">Monthly Report</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Monthly Attendance Report</h1>
+        <p class="page-subtitle">View and analyze attendance by month</p>
+    </div>
+    {% if report_data and selected_subject %}
+    <a href="{{ url_for('reports.export_attendance_excel', dept_id=selected_dept, subject_id=selected_subject, month=month_str) }}"
+       class="btn btn-success-custom">
+        <i class="fas fa-file-excel me-2"></i>Export Excel
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="form-card mb-4">
+    <div class="form-card-body">
+        <form method="GET" action="{{ url_for('attendance.report') }}">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Department</label>
+                    <select class="form-select" name="dept_id">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_dept == dept.id %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Subject</label>
+                    <select class="form-select" name="subject_id">
+                        <option value="">All Subjects</option>
+                        {% for subj in subjects %}
+                        <option value="{{ subj.id }}" {% if selected_subject == subj.id %}selected{% endif %}>
+                            {{ subj.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Month</label>
+                    <input type="month" class="form-control" name="month" value="{{ month_str }}">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary-custom w-100">
+                        <i class="fas fa-search me-2"></i>Generate Report
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if report_data %}
+<!-- Summary stats -->
+{% set total_pct = (report_data | map(attribute='percentage') | list | sum) / report_data|length if report_data else 0 %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon blue"><i class="fas fa-users"></i></div>
+            <div class="mini-stat-body">
+                <div class="mini-stat-value">{{ report_data|length }}</div>
+                <div class="mini-stat-label">Students</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon purple"><i class="fas fa-calendar-alt"></i></div>
+            <div class="mini-stat-body">
+                <div class="mini-stat-value">{{ dates_in_month|length }}</div>
+                <div class="mini-stat-label">Classes Held</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon green"><i class="fas fa-chart-line"></i></div>
+            <div class="mini-stat-body">
+                <div class="mini-stat-value">{{ total_pct | round(1) }}%</div>
+                <div class="mini-stat-label">Avg Attendance</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon orange"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="mini-stat-body">
+                <div class="mini-stat-value">{{ report_data | selectattr('percentage', 'lt', 75) | list | length }}</div>
+                <div class="mini-stat-label">Below 75%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Table -->
+<div class="form-card">
+    <div class="form-card-header">
+        <h3 class="form-card-title"><i class="fas fa-table me-2"></i>Attendance Matrix</h3>
+    </div>
+    <div class="table-responsive attendance-matrix-wrap">
+        <table class="table table-custom table-bordered attendance-matrix">
+            <thead>
+                <tr>
+                    <th class="sticky-col">Roll No</th>
+                    <th class="sticky-col2">Name</th>
+                    {% for d in dates_in_month %}
+                    <th class="date-col" title="{{ d.strftime('%A, %d %b') }}">
+                        {{ d.strftime('%d') }}
+                    </th>
+                    {% endfor %}
+                    <th class="text-center">P</th>
+                    <th class="text-center">A</th>
+                    <th class="text-center">%</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report_data %}
+                <tr>
+                    <td class="sticky-col"><code>{{ row.student.roll_number }}</code></td>
+                    <td class="sticky-col2">{{ row.student.full_name }}</td>
+                    {% for status in row.statuses %}
+                    <td class="att-cell text-center">
+                        {% if status == 'present' %}
+                        <span class="att-dot present" title="Present">P</span>
+                        {% elif status == 'absent' %}
+                        <span class="att-dot absent" title="Absent">A</span>
+                        {% elif status == 'late' %}
+                        <span class="att-dot late" title="Late">L</span>
+                        {% else %}
+                        <span class="att-dot no-data" title="No class">-</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td class="text-center fw-semibold text-success">{{ row.present }}</td>
+                    <td class="text-center fw-semibold text-danger">{{ row.absent }}</td>
+                    <td class="text-center">
+                        <span class="pct-badge {% if row.percentage < 60 %}critical{% elif row.percentage < 75 %}warning{% else %}good{% endif %}">
+                            {{ row.percentage }}%
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-calendar-alt"></i>
+    <h3>Select Filters to View Report</h3>
+    <p>Choose a department, subject, and month to generate the attendance report.</p>
+</div>
+{% endif %}
+{% endblock %}

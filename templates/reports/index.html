@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Export Reports{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Reports</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Export Reports</h1>
+        <p class="page-subtitle">Download data as Excel spreadsheets or PDF documents</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Student Reports -->
+    <div class="col-12 col-lg-6">
+        <div class="report-card">
+            <div class="report-card-header">
+                <div class="report-icon blue"><i class="fas fa-users"></i></div>
+                <div>
+                    <h3 class="report-card-title">Student Directory</h3>
+                    <p class="report-card-subtitle">Export complete student list with all details</p>
+                </div>
+            </div>
+            <div class="report-card-body">
+                <div class="mb-3">
+                    <label class="form-label">Filter by Department (optional)</label>
+                    <select class="form-select" id="studentDeptExcel">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success-custom flex-grow-1"
+                            onclick="exportReport('students/excel', {dept_id: document.getElementById('studentDeptExcel').value})">
+                        <i class="fas fa-file-excel me-2"></i>Excel
+                    </button>
+                    <button class="btn btn-danger-custom flex-grow-1"
+                            onclick="exportReport('students/pdf', {dept_id: document.getElementById('studentDeptExcel').value})">
+                        <i class="fas fa-file-pdf me-2"></i>PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Reports -->
+    <div class="col-12 col-lg-6">
+        <div class="report-card">
+            <div class="report-card-header">
+                <div class="report-icon green"><i class="fas fa-calendar-check"></i></div>
+                <div>
+                    <h3 class="report-card-title">Attendance Report</h3>
+                    <p class="report-card-subtitle">Monthly attendance data per subject</p>
+                </div>
+            </div>
+            <div class="report-card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" id="attDept">
+                            <option value="">All</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.code }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Month</label>
+                        <input type="month" class="form-control" id="attMonth"
+                               value="{{ now.strftime('%Y-%m') if now else '' }}">
+                    </div>
+                </div>
+                <button class="btn btn-success-custom w-100"
+                        onclick="exportReport('attendance/excel', {dept_id: document.getElementById('attDept').value, month: document.getElementById('attMonth').value})">
+                    <i class="fas fa-file-excel me-2"></i>Export Attendance Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Marks Reports -->
+    <div class="col-12 col-lg-6">
+        <div class="report-card">
+            <div class="report-card-header">
+                <div class="report-icon purple"><i class="fas fa-chart-bar"></i></div>
+                <div>
+                    <h3 class="report-card-title">Marks Report</h3>
+                    <p class="report-card-subtitle">Subject-wise marks and grades</p>
+                </div>
+            </div>
+            <div class="report-card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" id="marksDept">
+                            <option value="">All</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.code }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Academic Year</label>
+                        <select class="form-select" id="marksYear">
+                            <option value="2024-25">2024-25</option>
+                            <option value="2023-24">2023-24</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-success-custom w-100"
+                        onclick="exportReport('marks/excel', {dept_id: document.getElementById('marksDept').value, academic_year: document.getElementById('marksYear').value})">
+                    <i class="fas fa-file-excel me-2"></i>Export Marks Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Marksheets -->
+    <div class="col-12 col-lg-6">
+        <div class="report-card">
+            <div class="report-card-header">
+                <div class="report-icon orange"><i class="fas fa-file-alt"></i></div>
+                <div>
+                    <h3 class="report-card-title">Individual Marksheet</h3>
+                    <p class="report-card-subtitle">PDF marksheet for individual student</p>
+                </div>
+            </div>
+            <div class="report-card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Individual marksheets can be downloaded from the student profile page or from the Rank List.
+                </p>
+                <a href="{{ url_for('students.list_students') }}" class="btn btn-outline-custom w-100">
+                    <i class="fas fa-user-graduate me-2"></i>Go to Student List
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportReport(path, params) {
+    const url = new URL(`/reports/${path}`, window.location.origin);
+    Object.entries(params).forEach(([k, v]) => { if(v) url.searchParams.append(k, v); });
+    window.open(url.toString(), '_blank');
+}
+
+// Set current month default
+document.getElementById('attMonth').value = new Date().toISOString().slice(0, 7);
+</script>
+{% endblock %}

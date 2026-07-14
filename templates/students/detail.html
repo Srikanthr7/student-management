@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% block title %}{{ student.full_name }}{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('students.list_students') }}">Students</a></li>
+<li class="breadcrumb-item active">{{ student.full_name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Left: Profile Card -->
+    <div class="col-12 col-lg-4">
+        <div class="profile-card">
+            <div class="profile-card-header">
+                <div class="profile-photo-wrap">
+                    {% if student.photo_url %}
+                    <img src="{{ student.photo_url }}"
+                         alt="{{ student.full_name }}" class="profile-photo">
+                    {% elif student.photo_filename %}
+                    <img src="{{ url_for('students.student_photo', filename=student.photo_filename) }}"
+                         alt="{{ student.full_name }}" class="profile-photo">
+                    {% else %}
+                    <div class="profile-avatar-placeholder">
+                        {{ student.full_name[0] }}{{ student.full_name.split()[-1][0] if student.full_name.split()|length > 1 else '' }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="profile-status-badge {% if overall_attendance >= 75 %}success{% else %}danger{% endif %}">
+                    {% if overall_attendance >= 75 %}<i class="fas fa-check-circle"></i> Good Standing
+                    {% else %}<i class="fas fa-exclamation-circle"></i> Low Attendance{% endif %}
+                </div>
+            </div>
+            <div class="profile-card-body">
+                <h2 class="profile-name">{{ student.full_name }}</h2>
+                <p class="profile-id">{{ student.student_id }}</p>
+                <p class="profile-dept">
+                    <i class="fas fa-building me-1"></i>
+                    {{ student.department.name if student.department else 'N/A' }}
+                </p>
+
+                <div class="profile-meta-grid">
+                    <div class="meta-item">
+                        <i class="fas fa-id-badge meta-icon"></i>
+                        <div>
+                            <div class="meta-label">Roll Number</div>
+                            <div class="meta-value">{{ student.roll_number }}</div>
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-calendar meta-icon"></i>
+                        <div>
+                            <div class="meta-label">Year / Semester</div>
+                            <div class="meta-value">Year {{ student.year }} · Sem {{ student.semester }}</div>
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-envelope meta-icon"></i>
+                        <div>
+                            <div class="meta-label">Email</div>
+                            <div class="meta-value text-truncate">{{ student.email }}</div>
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-phone meta-icon"></i>
+                        <div>
+                            <div class="meta-label">Phone</div>
+                            <div class="meta-value">{{ student.phone or 'Not set' }}</div>
+                        </div>
+                    </div>
+                    {% if student.date_of_birth %}
+                    <div class="meta-item">
+                        <i class="fas fa-birthday-cake meta-icon"></i>
+                        <div>
+                            <div class="meta-label">Date of Birth</div>
+                            <div class="meta-value">{{ student.date_of_birth.strftime('%d %b %Y') }} (Age {{ student.age() }})</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if student.address %}
+                    <div class="meta-item">
+                        <i class="fas fa-map-marker-alt meta-icon"></i>
+                        <div>
+                            <div class="meta-label">Address</div>
+                            <div class="meta-value">{{ student.address[:60] }}{% if student.address|length > 60 %}...{% endif %}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Performance KPIs -->
+                <div class="profile-kpis">
+                    <div class="profile-kpi {% if overall_attendance < 75 %}kpi-danger{% elif overall_attendance < 85 %}kpi-warning{% else %}kpi-success{% endif %}">
+                        <div class="kpi-num">{{ overall_attendance }}%</div>
+                        <div class="kpi-lbl">Attendance</div>
+                    </div>
+                    <div class="profile-kpi">
+                        <div class="kpi-num">{{ cgpa }}</div>
+                        <div class="kpi-lbl">CGPA</div>
+                    </div>
+                    <div class="profile-kpi">
+                        <div class="kpi-num">{{ marks|length }}</div>
+                        <div class="kpi-lbl">Exams</div>
+                    </div>
+                </div>
+
+                {% if current_user.is_admin() or current_user.is_teacher() %}
+                <div class="profile-actions">
+                    <a href="{{ url_for('students.edit_student', student_id=student.id) }}"
+                       class="btn btn-primary-custom w-100 mb-2">
+                        <i class="fas fa-edit me-2"></i>Edit Profile
+                    </a>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{{ url_for('marks.student_marks', student_id=student.id) }}"
+                               class="btn btn-outline-custom w-100">
+                                <i class="fas fa-chart-bar me-1"></i>Marks
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('reports.student_marksheet_pdf', student_id=student.id) }}"
+                               class="btn btn-outline-custom w-100" target="_blank">
+                                <i class="fas fa-file-pdf me-1"></i>Marksheet
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Tabs -->
+    <div class="col-12 col-lg-8">
+        <div class="detail-card">
+            <ul class="nav nav-tabs-custom" id="studentTabs">
+                <li class="nav-item">
+                    <button class="nav-tab-btn active" data-bs-toggle="tab" data-bs-target="#attendanceTab">
+                        <i class="fas fa-calendar-check me-1"></i>Attendance
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-tab-btn" data-bs-toggle="tab" data-bs-target="#marksTab">
+                        <i class="fas fa-chart-bar me-1"></i>Marks
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-tab-btn" data-bs-toggle="tab" data-bs-target="#filesTab">
+                        <i class="fas fa-folder me-1"></i>Files
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content p-3">
+                <!-- Attendance Tab -->
+                <div class="tab-pane fade show active" id="attendanceTab">
+                    <h4 class="tab-section-title">Subject-wise Attendance</h4>
+                    {% if attendance_summary %}
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th class="text-center">Present</th>
+                                    <th class="text-center">Total</th>
+                                    <th class="text-center">Percentage</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in attendance_summary %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.subject.name }}</strong>
+                                        <br><small class="text-muted">{{ item.subject.code }}</small>
+                                    </td>
+                                    <td class="text-center">{{ item.present }}</td>
+                                    <td class="text-center">{{ item.total }}</td>
+                                    <td class="text-center">
+                                        <div class="progress-mini">
+                                            <div class="progress-mini-fill {% if item.low %}danger{% else %}success{% endif %}"
+                                                 style="width: {{ item.percentage }}%"></div>
+                                        </div>
+                                        <span class="{% if item.low %}text-danger{% else %}text-success{% endif %} fw-semibold">
+                                            {{ item.percentage }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.total == 0 %}
+                                        <span class="badge bg-secondary">No Data</span>
+                                        {% elif item.low %}
+                                        <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Low</span>
+                                        {% else %}
+                                        <span class="badge bg-success"><i class="fas fa-check me-1"></i>OK</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state-sm"><i class="fas fa-calendar"></i><p>No attendance records yet.</p></div>
+                    {% endif %}
+                </div>
+
+                <!-- Marks Tab -->
+                <div class="tab-pane fade" id="marksTab">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="tab-section-title mb-0">Academic Marks</h4>
+                        <a href="{{ url_for('marks.student_marks', student_id=student.id) }}"
+                           class="btn btn-sm btn-outline-custom">
+                            <i class="fas fa-external-link-alt me-1"></i>Full Analysis
+                        </a>
+                    </div>
+                    {% if marks %}
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Exam Type</th>
+                                    <th class="text-center">Marks</th>
+                                    <th class="text-center">Grade</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mark in marks %}
+                                <tr>
+                                    <td>{{ mark.subject.name if mark.subject else 'N/A' }}</td>
+                                    <td><span class="exam-type-badge">{{ mark.exam_type | title }}</span></td>
+                                    <td class="text-center">{{ mark.marks_obtained }}/{{ mark.max_marks }}
+                                        <br><small class="text-muted">{{ mark.percentage }}%</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="grade-badge grade-{{ mark.grade | replace('+','p') }}">{{ mark.grade }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if mark.is_pass %}
+                                        <span class="badge bg-success">Pass</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Fail</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state-sm"><i class="fas fa-chart-bar"></i><p>No marks entered yet.</p></div>
+                    {% endif %}
+                </div>
+
+                <!-- Files Tab -->
+                <div class="tab-pane fade" id="filesTab">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="tab-section-title mb-0">Uploaded Documents</h4>
+                        <button class="btn btn-sm btn-primary-custom" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="fas fa-upload me-1"></i>Upload File
+                        </button>
+                    </div>
+                    {% if files %}
+                    <div class="files-grid">
+                        {% for f in files %}
+                        <div class="file-item">
+                            <div class="file-icon">
+                                {% if f.file_type == 'photo' %}<i class="fas fa-image"></i>
+                                {% elif f.file_type == 'certificate' %}<i class="fas fa-certificate"></i>
+                                {% elif f.file_type == 'resume' %}<i class="fas fa-file-user"></i>
+                                {% else %}<i class="fas fa-file-pdf"></i>{% endif %}
+                            </div>
+                            <div class="file-info">
+                                <span class="file-name">{{ f.original_name[:25] }}{% if f.original_name|length > 25 %}...{% endif %}</span>
+                                <span class="file-meta">{{ f.file_type | title }} · {{ (f.file_size / 1024)|round(1) if f.file_size else '?' }} KB</span>
+                            </div>
+                            <div class="file-actions">
+                                <a href="{{ url_for('files.download_file', file_id=f.id) }}" class="btn-icon-sm">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                {% if current_user.is_admin() %}
+                                <form method="POST" action="{{ url_for('files.delete_file', file_id=f.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn-icon-sm text-danger" onclick="return confirm('Delete this file?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state-sm"><i class="fas fa-folder-open"></i><p>No files uploaded yet.</p></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-custom">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-upload me-2"></i>Upload Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('files.upload_file', student_id=student.id) }}"
+                  enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Document Type</label>
+                        <select class="form-select" name="file_type">
+                            <option value="document">Document</option>
+                            <option value="certificate">Certificate</option>
+                            <option value="resume">Resume</option>
+                            <option value="photo">Photo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select File</label>
+                        <input type="file" class="form-control" name="file" required
+                               accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg">
+                        <div class="form-text">Allowed: PDF, DOC, DOCX, TXT, PNG, JPG (max 16MB)</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-custom">
+                        <i class="fas fa-upload me-2"></i>Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

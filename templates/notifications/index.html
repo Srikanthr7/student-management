@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Notifications</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Notifications</h1>
+        <p class="page-subtitle">{{ notifications.total }} total notifications</p>
+    </div>
+    <form method="POST" action="{{ url_for('notifications.mark_all_read') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-custom">
+            <i class="fas fa-check-double me-2"></i>Mark All Read
+        </button>
+    </form>
+</div>
+
+<div class="form-card">
+    {% if notifications.items %}
+    <ul class="notif-full-list">
+        {% for notif in notifications.items %}
+        <li class="notif-full-item {% if not notif.is_read %}unread{% endif %}">
+            <div class="notif-full-icon {{ notif.type }}">
+                <i class="fas fa-{% if notif.type == 'success' %}check-circle{% elif notif.type == 'warning' %}exclamation-triangle{% elif notif.type == 'danger' %}times-circle{% else %}info-circle{% endif %}"></i>
+            </div>
+            <div class="notif-full-body">
+                <div class="notif-full-title">{{ notif.title }}</div>
+                <div class="notif-full-msg">{{ notif.message }}</div>
+                <div class="notif-full-time">
+                    <i class="far fa-clock me-1"></i>
+                    {{ notif.created_at.strftime('%d %b %Y, %H:%M') }}
+                </div>
+            </div>
+            {% if not notif.is_read %}
+            <div class="notif-full-actions">
+                <form method="POST" action="{{ url_for('notifications.mark_read', notif_id=notif.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-secondary">Mark Read</button>
+                </form>
+            </div>
+            <div class="unread-dot"></div>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    <!-- Pagination -->
+    {% if notifications.pages > 1 %}
+    <div class="d-flex justify-content-center p-3">
+        <nav>
+            <ul class="pagination pagination-custom">
+                {% if notifications.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('notifications.index', page=notifications.prev_num) }}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                {% for p in notifications.iter_pages() %}
+                {% if p %}
+                <li class="page-item {% if p == notifications.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('notifications.index', page=p) }}">{{ p }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                {% if notifications.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('notifications.index', page=notifications.next_num) }}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-bell-slash"></i>
+        <h3>No Notifications</h3>
+        <p>You're all caught up! No notifications to display.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

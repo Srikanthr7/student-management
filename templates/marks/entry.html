@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Enter Marks{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('marks.index') }}">Marks</a></li>
+<li class="breadcrumb-item active">Entry</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Marks Entry</h1>
+        <p class="page-subtitle">Enter subject-wise marks for students</p>
+    </div>
+    <a href="{{ url_for('marks.rank_list') }}" class="btn btn-outline-custom">
+        <i class="fas fa-trophy me-2"></i>Rank List
+    </a>
+</div>
+
+<!-- Filter Bar -->
+<div class="form-card mb-4">
+    <div class="form-card-body">
+        <form method="GET" action="{{ url_for('marks.entry') }}">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label">Department</label>
+                    <select class="form-select" name="dept_id">
+                        <option value="">Select</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_dept == dept.id %}selected{% endif %}>{{ dept.code }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Subject</label>
+                    <select class="form-select" name="subject_id">
+                        <option value="">Select Subject</option>
+                        {% for subj in subjects %}
+                        <option value="{{ subj.id }}" {% if selected_subject == subj.id %}selected{% endif %}>
+                            {{ subj.name }} ({{ subj.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Exam Type</label>
+                    <select class="form-select" name="exam_type">
+                        {% for et in ['midterm', 'final', 'internal', 'assignment'] %}
+                        <option value="{{ et }}" {% if exam_type == et %}selected{% endif %}>{{ et | title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Semester</label>
+                    <select class="form-select" name="semester">
+                        {% for s in range(1, 9) %}
+                        <option value="{{ s }}" {% if semester == s %}selected{% endif %}>Sem {{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Academic Year</label>
+                    <select class="form-select" name="academic_year">
+                        {% for ay in ['2024-25', '2023-24', '2025-26'] %}
+                        <option value="{{ ay }}" {% if academic_year == ay %}selected{% endif %}>{{ ay }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary-custom w-100">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if students %}
+<form method="POST" action="{{ url_for('marks.entry') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="dept_id" value="{{ selected_dept }}">
+    <input type="hidden" name="subject_id" value="{{ selected_subject }}">
+    <input type="hidden" name="exam_type" value="{{ exam_type }}">
+    <input type="hidden" name="semester" value="{{ semester }}">
+    <input type="hidden" name="academic_year" value="{{ academic_year }}">
+
+    <div class="form-card">
+        <div class="form-card-header">
+            <div>
+                <h3 class="form-card-title">{{ students|length }} Students — {{ exam_type | title }}</h3>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <label class="form-label mb-0">Max Marks:</label>
+                <input type="number" class="form-control" name="max_marks" id="maxMarks"
+                       value="100" min="1" max="200" style="width:90px;">
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-custom table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Roll No</th>
+                        <th>Student Name</th>
+                        <th class="text-center" style="width:160px">Marks Obtained</th>
+                        <th class="text-center">Grade</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    {% set existing = existing_marks.get(student.id) %}
+                    <input type="hidden" name="student_ids[]" value="{{ student.id }}">
+                    <tr>
+                        <td class="text-muted">{{ loop.index }}</td>
+                        <td><code>{{ student.roll_number }}</code></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="student-mini-avatar">{{ student.full_name[0] }}</div>
+                                {{ student.full_name }}
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <input type="number" class="form-control marks-input text-center"
+                                   name="marks_{{ student.id }}" id="marks_{{ student.id }}"
+                                   value="{{ existing.marks_obtained if existing else '' }}"
+                                   min="0" step="0.5" placeholder="0–100"
+                                   onchange="updateGrade(this, {{ student.id }})">
+                        </td>
+                        <td class="text-center">
+                            <span class="grade-badge grade-display" id="grade_{{ student.id }}">
+                                {% if existing %}{{ existing.grade }}{% else %}—{% endif %}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="pass-status" id="status_{{ student.id }}">
+                                {% if existing %}
+                                    {% if existing.is_pass %}<span class="badge bg-success">Pass</span>
+                                    {% else %}<span class="badge bg-danger">Fail</span>{% endif %}
+                                {% else %}—{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="form-card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Minimum 40% required to pass. Marks are auto-saved per entry.
+                </div>
+                <button type="submit" class="btn btn-primary-custom btn-lg">
+                    <i class="fas fa-save me-2"></i>Save All Marks
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% elif selected_dept and selected_subject %}
+<div class="empty-state">
+    <i class="fas fa-users-slash"></i>
+    <h3>No Students Found</h3>
+    <p>No active students match the selected criteria.</p>
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-edit"></i>
+    <h3>Select Exam Details</h3>
+    <p>Choose a department, subject, exam type and semester to enter marks.</p>
+</div>
+{% endif %}
+
+<script>
+const GRADE_TABLE = [
+    [90,'O'],[80,'A+'],[75,'A'],[70,'B+'],[65,'B'],
+    [60,'C+'],[55,'C'],[50,'D'],[45,'E'],[40,'E'],[0,'F']
+];
+
+function getGrade(pct) {
+    for (let [threshold, grade] of GRADE_TABLE) {
+        if (pct >= threshold) return { grade, pass: pct >= 40 };
+    }
+    return { grade: 'F', pass: false };
+}
+
+function updateGrade(input, studentId) {
+    const max = parseFloat(document.getElementById('maxMarks').value) || 100;
+    const val = parseFloat(input.value);
+    const gradeEl = document.getElementById(`grade_${studentId}`);
+    const statusEl = document.getElementById(`status_${studentId}`);
+
+    if (isNaN(val) || val < 0) {
+        gradeEl.textContent = '—';
+        statusEl.innerHTML = '—';
+        return;
+    }
+
+    const pct = (val / max) * 100;
+    const { grade, pass } = getGrade(pct);
+
+    gradeEl.textContent = grade;
+    gradeEl.className = `grade-badge grade-${grade.replace('+','p')}`;
+    statusEl.innerHTML = pass
+        ? '<span class="badge bg-success">Pass</span>'
+        : '<span class="badge bg-danger">Fail</span>';
+}
+
+document.getElementById('maxMarks')?.addEventListener('change', () => {
+    document.querySelectorAll('.marks-input').forEach(input => {
+        const sid = input.name.replace('marks_', '');
+        updateGrade(input, sid);
+    });
+});
+</script>
+{% endblock %}

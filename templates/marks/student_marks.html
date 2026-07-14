@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}{{ student.full_name }} — Marks{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('marks.index') }}">Marks</a></li>
+<li class="breadcrumb-item active">{{ student.full_name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ student.full_name }}</h1>
+        <p class="page-subtitle">{{ student.student_id }} · CGPA: <strong>{{ cgpa }}</strong></p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('students.student_detail', student_id=student.id) }}" class="btn btn-outline-custom">
+            <i class="fas fa-user me-2"></i>Profile
+        </a>
+        <a href="{{ url_for('reports.student_marksheet_pdf', student_id=student.id) }}"
+           class="btn btn-danger-custom" target="_blank">
+            <i class="fas fa-file-pdf me-2"></i>Download Marksheet
+        </a>
+    </div>
+</div>
+
+<!-- AI Prediction Card -->
+{% if prediction and not prediction.get('error') %}
+<div class="prediction-card {% if prediction.risk_level == 'low' %}pred-good{% elif prediction.risk_level == 'medium' %}pred-medium{% elif prediction.risk_level == 'high' %}pred-high{% else %}pred-critical{% endif %} mb-4">
+    <div class="pred-icon">
+        <i class="fas fa-robot"></i>
+    </div>
+    <div class="pred-body">
+        <div class="pred-header">
+            <span class="pred-title">AI Performance Prediction</span>
+            <span class="pred-badge {{ prediction.risk_level }}">{{ prediction.prediction }}</span>
+        </div>
+        <p class="pred-message">{{ prediction.recommendation }}</p>
+        <div class="pred-stats">
+            <span><i class="fas fa-chart-line me-1"></i> Avg: {{ prediction.avg_percentage }}%</span>
+            <span><i class="fas fa-graduation-cap me-1"></i> CGPA: {{ prediction.cgpa }}</span>
+            <span><i class="fas fa-calendar-check me-1"></i> Attendance: {{ prediction.attendance_percentage }}%</span>
+            <span><i class="fas fa-tasks me-1"></i> Pass Rate: {{ prediction.pass_rate }}%</span>
+        </div>
+    </div>
+    <div class="pred-confidence">
+        <div class="conf-circle">
+            <span>{{ prediction.confidence }}%</span>
+            <small>Confidence</small>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <!-- Marks Table -->
+    <div class="col-12 col-lg-8">
+        <div class="form-card">
+            <div class="form-card-header">
+                <h3 class="form-card-title"><i class="fas fa-list me-2"></i>Subject-wise Marks</h3>
+            </div>
+            {% if marks %}
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Semester</th>
+                            <th>Exam Type</th>
+                            <th class="text-center">Marks</th>
+                            <th class="text-center">%</th>
+                            <th class="text-center">Grade</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mark in marks %}
+                        <tr>
+                            <td>{{ mark.subject.name if mark.subject else 'N/A' }}</td>
+                            <td>Sem {{ mark.semester }}</td>
+                            <td><span class="exam-type-badge">{{ mark.exam_type | title }}</span></td>
+                            <td class="text-center">{{ mark.marks_obtained }}/{{ mark.max_marks }}</td>
+                            <td class="text-center">
+                                <span class="fw-semibold {% if mark.percentage >= 75 %}text-success{% elif mark.percentage >= 40 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ mark.percentage }}%
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="grade-badge grade-{{ mark.grade | replace('+','p') }}">{{ mark.grade }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if mark.is_pass %}<span class="badge bg-success">Pass</span>
+                                {% else %}<span class="badge bg-danger">Fail</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state-sm">
+                <i class="fas fa-chart-bar"></i>
+                <p>No marks entered yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Performance Chart -->
+    <div class="col-12 col-lg-4">
+        <div class="chart-card mb-4">
+            <div class="chart-card-header">
+                <h3 class="chart-title"><i class="fas fa-chart-radar me-2"></i>Performance</h3>
+            </div>
+            <div class="chart-body">
+                <canvas id="studentPerformanceChart" height="220"></canvas>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="form-card">
+            <div class="form-card-body">
+                <div class="quick-stats-grid">
+                    <div class="qs-item">
+                        <span class="qs-label">CGPA</span>
+                        <span class="qs-value primary">{{ cgpa }}</span>
+                    </div>
+                    <div class="qs-item">
+                        <span class="qs-label">Total Exams</span>
+                        <span class="qs-value">{{ marks|length }}</span>
+                    </div>
+                    <div class="qs-item">
+                        <span class="qs-label">Passed</span>
+                        <span class="qs-value success">{{ marks | selectattr('is_pass') | list | length }}</span>
+                    </div>
+                    <div class="qs-item">
+                        <span class="qs-label">Failed</span>
+                        <span class="qs-value danger">{{ marks | rejectattr('is_pass') | list | length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const marks = [{% for m in marks %}{subject:'{{ m.subject.name[:12] if m.subject else "N/A" }}', pct:{{ m.percentage }}},{% endfor %}];
+    const labels = marks.slice(0,8).map(m=>m.subject);
+    const data = marks.slice(0,8).map(m=>m.pct);
+
+    new Chart(document.getElementById('studentPerformanceChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Score %',
+                data,
+                backgroundColor: data.map(v => v >= 75 ? '#10b981' : v >= 40 ? '#f59e0b' : '#ef4444'),
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, max: 100,
+                     grid: { color: 'rgba(0,0,0,0.05)' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

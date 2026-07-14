@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}{{ student.full_name }} — Documents{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('students.list_students') }}">Students</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('students.student_detail', student_id=student.id) }}">{{ student.full_name }}</a></li>
+<li class="breadcrumb-item active">Documents</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Document Management</h1>
+        <p class="page-subtitle">Upload and download certificates, photos, resumes, and other documents for <strong>{{ student.full_name }}</strong>.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Upload Form Card -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm p-4">
+            <div class="card-body">
+                <h3 class="card-title h5 mb-4"><i class="fas fa-upload me-2 text-primary"></i>Upload Document</h3>
+                <form action="{{ url_for('files.upload_file', student_id=student.id) }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select File</label>
+                        <input class="form-control" type="file" id="file" name="file" required>
+                        <div class="form-text">Max size 16MB. Allowed types: PDF, DOC, DOCX, TXT, Images.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="file_type" class="form-label">Document Type</label>
+                        <select class="form-select" id="file_type" name="file_type" required>
+                            <option value="document" selected>General Document</option>
+                            <option value="photo">Profile Photo</option>
+                            <option value="certificate">Certificate</option>
+                            <option value="resume">Resume</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-custom w-100">
+                        <i class="fas fa-cloud-upload-alt me-2"></i>Upload File
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Uploaded Files List -->
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-0">
+                <h3 class="card-title h5 mb-0"><i class="fas fa-folder-open me-2 text-primary"></i>Uploaded Files</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Original Name</th>
+                                <th>Type</th>
+                                <th>Size</th>
+                                <th>Uploaded At</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in files %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm me-3 bg-primary-soft text-primary">
+                                            {% if file.file_type == 'photo' %}
+                                            <i class="fas fa-image"></i>
+                                            {% elif file.file_type == 'certificate' %}
+                                            <i class="fas fa-award"></i>
+                                            {% elif file.file_type == 'resume' %}
+                                            <i class="fas fa-file-invoice"></i>
+                                            {% else %}
+                                            <i class="fas fa-file-alt"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-truncate" style="max-width: 250px;" title="{{ file.original_name }}">{{ file.original_name }}</div>
+                                            <span class="text-muted small">ID: {{ file.filename }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-soft text-secondary">
+                                        {{ file.file_type | title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if file.file_size %}
+                                        {% if file.file_size < 1024 %}
+                                            {{ file.file_size }} B
+                                        {% elif file.file_size < 1048576 %}
+                                            {{ (file.file_size / 1024) | round(1) }} KB
+                                        {% else %}
+                                            {{ (file.file_size / 1048576) | round(1) }} MB
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>{{ file.uploaded_at.strftime('%d %b %Y, %H:%M') }}</td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('files.download_file', file_id=file.id) }}" class="btn btn-sm btn-outline-primary" title="Download">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        {% if current_user.is_admin() %}
+                                        <form action="{{ url_for('files.delete_file', file_id=file.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this file?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="fas fa-folder-open fa-3x mb-3 text-secondary"></i>
+                                    <p>No documents uploaded for this student.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
