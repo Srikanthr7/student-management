@@ -1179,33 +1179,6 @@ body {
     margin-left: .75em;
 }
 
-.default-creds {
-    background-color: var(--primary-soft);
-    border-radius: var(--border-radius-md);
-    padding: 0.75rem 1rem;
-    border: 1px dashed rgba(79, 70, 229, 0.2);
-}
-
-.cred-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.85rem;
-}
-
-.cred-label {
-    font-weight: 600;
-    color: var(--primary);
-}
-
-.cred-value {
-    font-family: monospace;
-    color: var(--text-primary);
-    background-color: var(--bg-surface);
-    padding: 0.15rem 0.4rem;
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--border-color);
-}
 
 /* Features list below card */
 .login-features {
