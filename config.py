@@ -87,9 +87,10 @@ class ProductionConfig(Config):
     WTF_CSRF_ENABLED = True
     SESSION_COOKIE_SECURE = True
 
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', '').replace(
+    _database_url = os.environ.get('DATABASE_URL', '')
+    SQLALCHEMY_DATABASE_URI = _database_url.replace(
         'postgres://', 'postgresql://'
-    )
+    ) if _database_url else f'sqlite:///{os.path.join(BASE_DIR, "edutrack.db")}'
 
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,

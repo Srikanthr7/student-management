@@ -17,6 +17,12 @@ services:
         fromDatabase:
           name: edutrack-db
           property: connectionString
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dnxkhezeh
+      - key: CLOUDINARY_API_KEY
+        value: "344713289558367"
+      - key: CLOUDINARY_API_SECRET
+        sync: false
 
 databases:
   - name: edutrack-db
