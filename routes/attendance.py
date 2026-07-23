@@ -15,13 +15,8 @@ attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
 @attendance_bp.route('/')
 @login_required
 def index():
-    today = date.today()
-    departments = Department.query.order_by(Department.name).all()
-    subjects = Subject.query.order_by(Subject.name).all()
-    return render_template('attendance/index.html',
-                           departments=departments,
-                           subjects=subjects,
-                           today=today)
+    return redirect(url_for('attendance.mark_attendance'))
+
 
 
 @attendance_bp.route('/mark', methods=['GET', 'POST'])

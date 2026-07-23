@@ -24,6 +24,7 @@ def index():
     # New registrations this month
     first_day = date.today().replace(day=1)
     new_this_month = Student.query.filter(
+        Student.is_active == True,
         Student.created_at >= first_day
     ).count()
 
@@ -50,8 +51,8 @@ def index():
     low_attendance_students.sort(key=lambda x: x['percentage'])
     low_attendance_count = len(low_attendance_students)
 
-    # Recent students
-    recent_students = Student.query.order_by(Student.created_at.desc()).limit(5).all()
+    # Recent active students
+    recent_students = Student.query.filter_by(is_active=True).order_by(Student.created_at.desc()).limit(5).all()
 
     # Recent notifications
     recent_notifications = Notification.query.filter_by(
@@ -62,7 +63,7 @@ def index():
     dept_data = db.session.query(
         Department.name,
         func.count(Student.id).label('count')
-    ).outerjoin(Student, Student.department_id == Department.id).group_by(Department.id).all()
+    ).outerjoin(Student, (Student.department_id == Department.id) & (Student.is_active == True)).group_by(Department.id).all()
 
     dept_labels = [d.name for d in dept_data]
     dept_counts = [d.count for d in dept_data]
@@ -74,11 +75,13 @@ def index():
         dt = date.today() - timedelta(days=i * 30)
         label = dt.strftime('%b %Y')
         count = Student.query.filter(
+            Student.is_active == True,
             extract('month', Student.created_at) == dt.month,
             extract('year', Student.created_at) == dt.year
         ).count()
         monthly_labels.append(label)
         monthly_counts.append(count)
+
 
     # Performance distribution
     all_marks = Mark.query.all()
