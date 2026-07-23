@@ -88,9 +88,12 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
 
     _database_url = os.environ.get('DATABASE_URL', '')
-    SQLALCHEMY_DATABASE_URI = _database_url.replace(
-        'postgres://', 'postgresql://'
-    ) if _database_url else f'sqlite:///{os.path.join(BASE_DIR, "edutrack.db")}'
+    if _database_url:
+        SQLALCHEMY_DATABASE_URI = _database_url.replace('postgres://', 'postgresql://')
+    elif os.environ.get('VERCEL'):
+        SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/edutrack.db'
+    else:
+        SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(BASE_DIR, "edutrack.db")}'
 
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,

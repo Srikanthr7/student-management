@@ -47,7 +47,7 @@ def create_app(config_name: str = None) -> Flask:
 
 
 def _ensure_directories(app: Flask):
-    """Create required directories if they don't exist."""
+    """Create required directories if they don't exist (handles read-only filesystems)."""
     dirs = [
         app.config['UPLOAD_FOLDER'],
         os.path.join(app.config['UPLOAD_FOLDER'], 'photos'),
@@ -56,7 +56,12 @@ def _ensure_directories(app: Flask):
         os.path.join(app.config['UPLOAD_FOLDER'], 'resumes'),
     ]
     for d in dirs:
-        os.makedirs(d, exist_ok=True)
+        try:
+            os.makedirs(d, exist_ok=True)
+        except OSError:
+            # Serverless environments (like Vercel) have a read-only filesystem
+            pass
+
 
 
 def _register_blueprints(app: Flask):
