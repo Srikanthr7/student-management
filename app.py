@@ -43,7 +43,17 @@ def create_app(config_name: str = None) -> Flask:
     # Register context processors
     _register_context_processors(app)
 
+    # Auto-initialize database tables for serverless/first-run deployments
+    with app.app_context():
+        try:
+            db.create_all()
+            from services.auth_service import create_default_admin
+            create_default_admin(app)
+        except Exception as e:
+            app.logger.warning(f"DB auto-init notice: {e}")
+
     return app
+
 
 
 def _ensure_directories(app: Flask):
@@ -114,16 +124,20 @@ def _register_context_processors(app: Flask):
     @app.context_processor
     def inject_globals():
         unread_count = 0
-        if current_user.is_authenticated:
-            unread_count = Notification.query.filter_by(
-                user_id=current_user.id, is_read=False
-            ).count()
+        try:
+            if current_user.is_authenticated:
+                unread_count = Notification.query.filter_by(
+                    user_id=current_user.id, is_read=False
+                ).count()
+        except Exception:
+            unread_count = 0
         return {
             'app_name': app.config.get('APP_NAME', 'EduTrack Pro'),
             'app_version': app.config.get('APP_VERSION', '1.0.0'),
             'current_year': datetime.utcnow().year,
             'unread_notifications': unread_count,
         }
+
 
 
 def _register_cli_commands(app: Flask):
