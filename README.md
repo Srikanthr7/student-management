@@ -47,7 +47,7 @@ EduTrack Pro is a modern, premium, full-stack Student Management System (SMS) bu
 * **Backend**: Python 3.11+, Flask, SQLAlchemy ORM, Flask-WTF, Flask-Migrate
 * **Frontend**: HTML5, Vanilla CSS3 (Custom design system), Bootstrap 5.3, JavaScript (ES6+), Chart.js
 * **Database**: SQLite (Development), PostgreSQL (Production-ready)
-* **DevOps**: Docker, Gunicorn, Render Configuration
+* **DevOps**: Gunicorn, Render Configuration
 
 ---
 
@@ -133,16 +133,6 @@ Open your browser and navigate to `http://127.0.0.1:5000`.
 ---
 
 ## Production Deployment
-
-### Using Docker
-To build and run the application container:
-```bash
-# Build image
-docker build -t edutrack-pro .
-
-# Run container
-docker run -p 5000:5000 --env-file .env edutrack-pro
-```
 
 ### Deploying to Render
 1. Connect this repository to your Render account.
